@@ -430,6 +430,15 @@ collectd_LDADD += "-dlopen" gmond.la
 collectd_DEPENDENCIES += gmond.la
 endif
 
+if BUILD_PLUGIN_GSTAT
+pkglib_LTLIBRARIES += gstat.la
+gstat_la_SOURCES = gstat.c
+gstat_la_LDFLAGS = -module -avoid-version
+gstat_la_LIBADD = -ldevstat -lgeom
+collectd_LDADD += "-dlopen" gstat.la
+collectd_DEPENDENCIES += gstat.la
+endif
+
 if BUILD_PLUGIN_HDDTEMP
 pkglib_LTLIBRARIES += hddtemp.la
 hddtemp_la_SOURCES = hddtemp.c

@@ -495,6 +495,9 @@ AC_CHECK_HEADERS(linux/un.h, [], [],
 
 AC_CHECK_HEADERS(pwd.h grp.h sys/un.h ctype.h limits.h xfs/xqm.h fs_info.h fshelp.h paths.h mntent.h mnttab.h sys/fstyp.h sys/fs_types.h sys/mntent.h sys/mnttab.h sys/statfs.h sys/statvfs.h sys/vfs.h sys/vfstab.h kvm.h wordexp.h)
 
+# For the gstat plugin
+AC_CHECK_HEADERS(sys/devicestat.h devstat.h libgeom.h)
+
 # For the dns plugin
 AC_CHECK_HEADERS(arpa/nameser.h)
 AC_CHECK_HEADERS(arpa/nameser_compat.h, [], [],
@@ -1446,6 +1449,28 @@ then
 	with_libkvm="yes"
 fi
 AM_CONDITIONAL(BUILD_WITH_LIBKVM_OPENFILES, test "x$with_kvm_openfiles" = "xyes")
+
+# --with-libdevstat
+with_libdevstat="no"
+AC_CHECK_LIB(devstat, devstat_compute_statistics, [with_devstat_compute_statistics="yes"], [with_devstat_compute_statistics="no"])
+if test "x$with_devstat_compute_statistics" = "xyes"
+then
+	AC_DEFINE(HAVE_LIBDEVSTAT_COMPUTE_STATISTICS, 1,
+		  [Define to 1 if you have the 'devstat' library with the 'devstat_compute_statistics' symbol (-ldevstat)])
+		with_libdevstat="yes"
+fi
+AM_CONDITIONAL(BUILD_WITH_LIBDEVSTAT_COMPUTE_STATISTICS, test "x$with_devstat_compute_statistics" = "xyes")
+
+# --with-libgeom
+with_libgeom="no"
+AC_CHECK_LIB(geom, geom_stats_open, [with_geom_stats_open="yes"], [with_geom_stats_open="no"])
+if test "x$with_geom_stats_open" = "xyes"
+then
+	AC_DEFINE(HAVE_LIBGEOM_STATS_OPEN, 1,
+		  [Define to 1 if you have the 'geom' library with the 'geom_stats_open' symbol (-lgeom)])
+		with_libgeom="yes"
+fi
+AM_CONDITIONAL(BUILD_WITH_LIBGEOM_STATS_OPEN, test "x$with_geom_stats_open" = "xyes")
 
 # --with-libcredis {{{
 AC_ARG_WITH(libcredis, [AS_HELP_STRING([--with-libcredis@<:@=PREFIX@:>@], [Path to libcredis.])],
@@ -4569,6 +4594,7 @@ plugin_nfs="no"
 plugin_numa="no"
 plugin_perl="no"
 plugin_processes="no"
+plugin_gstat="no"
 plugin_protocols="no"
 plugin_serial="no"
 plugin_swap="no"
@@ -4834,6 +4860,11 @@ then
 	plugin_users="yes"
 fi
 
+if test "x$with_libdevstat" = "xyes" && test "x$with_libgeom" = "xyes"
+then
+	plugin_gstat="yes"
+fi
+
 m4_divert_once([HELP_ENABLE], [
 collectd plugins:])
 
@@ -4882,6 +4913,7 @@ AC_PLUGIN([exec],        [yes],                [Execution of external programs])
 AC_PLUGIN([filecount],   [yes],                [Count files in directories])
 AC_PLUGIN([fscache],     [$plugin_fscache],    [fscache statistics])
 AC_PLUGIN([gmond],       [$with_libganglia],   [Ganglia plugin])
+AC_PLUGIN([gstat],       [$plugin_gstat],      [GEOM statistics])
 AC_PLUGIN([hddtemp],     [yes],                [Query hddtempd])
 AC_PLUGIN([interface],   [$plugin_interface],  [Interface traffic statistics])
 AC_PLUGIN([ipmi],        [$plugin_ipmi],       [IPMI sensor statistics])
@@ -5149,6 +5181,8 @@ Configuration:
     libjvm  . . . . . . . $with_java
     libkstat  . . . . . . $with_kstat
     libkvm  . . . . . . . $with_libkvm
+    libdevstat  . . . . . $with_libdevstat
+    libgeom . . . . . . . $with_libgeom
     libmemcached  . . . . $with_libmemcached
     libmodbus . . . . . . $with_libmodbus
     libmysql  . . . . . . $with_libmysql
@@ -5216,6 +5250,7 @@ Configuration:
     filecount . . . . . . $enable_filecount
     fscache . . . . . . . $enable_fscache
     gmond . . . . . . . . $enable_gmond
+    gstat . . . . . . . . $enable_gstat
     hddtemp . . . . . . . $enable_hddtemp
     interface . . . . . . $enable_interface
     ipmi  . . . . . . . . $enable_ipmi
